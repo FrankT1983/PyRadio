@@ -1,0 +1,6 @@
+adafruit-circuitpython-scd4x
+adafruit-circuitpython-max9744
+adafruit-circuitpython-seesaw
+board
+python-vlc
+keyboard

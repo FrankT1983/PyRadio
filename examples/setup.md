@@ -28,3 +28,6 @@ frank@raspberrypi:~ $ i2cdetect -y 1
 4b co2 snsor
 50 display
 
+
+
+https://avw.mdr.de/streams/284340-0_mp3_high.m3u
