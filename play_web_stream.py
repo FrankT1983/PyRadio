@@ -1,90 +1,84 @@
+from pynput import keyboard  # Replacing the keyboard package
 import vlc
 import time
-import keyboard  # For detecting key presses
 import requests
 import xml.etree.ElementTree as ET
 
-
 playing_something = False
+current_index = 0
+key_pressed = None
+
+def on_press(key):
+    global key_pressed
+    try:
+        key_pressed = key.char  # Get the character of the key pressed
+    except AttributeError:
+        pass  # Handle special keys like Shift, Ctrl, etc.
+
+def on_release(key):
+    global key_pressed
+    key_pressed = None  # Reset the key when released
 
 def get_mp3_url_from_rss(rss_url):
     try:
-        # Fetch the RSS feed
         response = requests.get(rss_url)
-        response.raise_for_status()  # Raise an error for HTTP issues
-
-        # Parse the XML content
+        response.raise_for_status()
         root = ET.fromstring(response.content)
-
-        # Find the first <item> element
         for item in root.findall(".//item"):
-            # Extract the <enclosure> element
             enclosure = item.find("enclosure")
             if enclosure is not None:
                 url = enclosure.get("url")
                 file_type = enclosure.get("type")
-
-                # Check if the file is an MP3
                 if file_type == "audio/mpeg" and url.endswith(".mp3"):
                     return url
-
-        return None  # Return None if no valid MP3 URL is found
-
+        return None
     except requests.RequestException as e:
         print(f"Error fetching RSS feed: {e}")
         return None
     except ET.ParseError as e:
         print(f"Error parsing XML: {e}")
 
-def switch_stream(player, news_player, streams, new_index,):
+def switch_stream(player, news_player, streams, new_index):
     global playing_something
-    """Switch to a new stream by index."""
     news_player.stop()
     player.play_item_at_index(new_index)
     playing_something = True
     print(f"Switched to stream: {streams[new_index]['name']} ({streams[new_index]['url']})")
 
-
 def play_streams(streams, news_streams):
-    global playing_something
-    # Create a VLC instance and media list player
+    global playing_something, current_index, key_pressed
     instance = vlc.Instance()
     player = instance.media_list_player_new()
     media_list = instance.media_list_new([stream["url"] for stream in streams])
     player.set_media_list(media_list)
-
-    # Create a separate MediaPlayer for news streams
     news_player = instance.media_player_new()
-
-    # Start playing the first stream
-    current_index = 0
     switch_stream(player, news_player, streams, current_index)
+
+    listener = keyboard.Listener(on_press=on_press, on_release=on_release)
+    listener.start()
 
     try:
         while True:
-            # Listen for 'a' to go to the previous stream
-            if keyboard.is_pressed('a'):
+            if key_pressed == 'a':
                 current_index = (current_index - 1) % len(streams)
                 switch_stream(player, news_player, streams, current_index)
-                time.sleep(1)  # Prevent rapid switching
+                time.sleep(1)
 
-            # Listen for 'd' to go to the next stream
-            if keyboard.is_pressed('d'):
+            if key_pressed == 'd':
                 current_index = (current_index + 1) % len(streams)
                 switch_stream(player, news_player, streams, current_index)
-                time.sleep(1)  # Prevent rapid switching
-            
-            if keyboard.is_pressed('p'):
-                print("Pausing playback." + str(current_index) + " " + str(playing_something)) 
+                time.sleep(1)
+
+            if key_pressed == 'p':
                 if playing_something:
                     print("Stopping playback.")
                     player.stop()
                     news_player.stop()
                     playing_something = False
                 else:
-                    switch_stream(player, news_player, streams, current_index)                
+                    switch_stream(player, news_player, streams, current_index)
 
-            if keyboard.is_pressed('n'):
+            if key_pressed == 'n':
                 news_url = get_mp3_url_from_rss(news_streams[0]["rss"])
                 if news_url:
                     print(f"Playing news: {news_streams[0]['name']} ({news_url})")
@@ -94,12 +88,13 @@ def play_streams(streams, news_streams):
                     news_player.play()
                     time.sleep(1)
 
-
-            time.sleep(0.1)  # Prevent high CPU usage
+            time.sleep(0.1)
     except KeyboardInterrupt:
         print("\nStopping playback.")
         player.stop()
         news_player.stop()
+    finally:
+        listener.stop()
 
 if __name__ == "__main__":
     streams = [

@@ -3,4 +3,4 @@ adafruit-circuitpython-max9744
 adafruit-circuitpython-seesaw
 board
 python-vlc
-keyboard
+pynput
