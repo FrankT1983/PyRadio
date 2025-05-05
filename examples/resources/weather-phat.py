@@ -42,6 +42,7 @@ PATH = os.path.dirname(__file__)
 
 CITY = "Dublin"
 COUNTRYCODE = "IR"
+LOCATION = [53.2879928,-6.2420051]
 WARNING_TEMP = 25.0
 
 white = (255, 255, 255, 255)
@@ -52,9 +53,9 @@ current_stream = "Tagesschau 100 Sekunden"
 
 # Convert a city name and country code to latitude and longitude
 def get_coords(address):
-    g = geocoder.arcgis(address)
-    coords = g.latlng
-    return coords
+    # g = geocoder.arcgis(address)
+    # coords = g.latlng
+    return LOCATION
 
 # Query OpenMeteo (https://open-meteo.com) to get current weather data
 def get_weather(address):
@@ -175,7 +176,7 @@ device_humidity_string = str("{}%".format(int(device_humidity)))
 
 draw.text((0, 0), datetime, white, font=font)
 weather_block_y = 46
-draw_text_right_aligned(location_string, weather_block_y, font_small, white if temperature < WARNING_TEMP else red)
+draw_text_right_aligned(CITY, weather_block_y, font_small, white if temperature < WARNING_TEMP else red)
 draw_text_right_aligned(temperature_from_weather_string, weather_block_y+1+get_text_height(font_small), font, white if temperature < WARNING_TEMP else red)
 
 def draw_stacked_text_left_aligned(texts, y):
